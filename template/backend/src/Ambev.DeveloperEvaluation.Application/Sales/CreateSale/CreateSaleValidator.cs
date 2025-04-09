@@ -26,16 +26,10 @@ namespace Ambev.DeveloperEvaluation.Application.Sales.CreateSale
                 .NotEmpty().WithMessage("Branch is required.")
                 .MaximumLength(100).WithMessage("Branch name must be 100 characters or fewer.");
 
-            RuleFor(x => x.Product)
-                .NotEmpty().WithMessage("Product is required.")
-                .MaximumLength(100).WithMessage("Product name must be 100 characters or fewer.");
+            RuleFor(x => x.Items)
+                .NotEmpty().WithMessage("At least one sale item is required.");
 
-            RuleFor(x => x.Quantity)
-                .GreaterThan(0).WithMessage("Quantity must be greater than 0.")
-                .LessThanOrEqualTo(20).WithMessage("Cannot sell more than 20 identical items.");
-
-            RuleFor(x => x.UnitPrice)
-                .GreaterThan(0).WithMessage("Unit price must be greater than 0.");
+            RuleForEach(x => x.Items).SetValidator(new SaleItemValidator());
         }
     }
 }

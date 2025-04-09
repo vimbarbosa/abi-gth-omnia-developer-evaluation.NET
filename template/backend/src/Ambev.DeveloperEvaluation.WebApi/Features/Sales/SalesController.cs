@@ -10,6 +10,10 @@ using Ambev.DeveloperEvaluation.Application.Sales.GetSale;
 using Ambev.DeveloperEvaluation.Application.Sales.DeleteSale;
 using Ambev.DeveloperEvaluation.Application.Sales.UpdateSale;
 using Ambev.DeveloperEvaluation.WebApi.Features.Sales.UpdateSale;
+using Ambev.DeveloperEvaluation.Application.SaleItems.AddSaleItem;
+using Ambev.DeveloperEvaluation.WebApi.Features.Sales.AddSaleItem;
+using Ambev.DeveloperEvaluation.Application.SaleItems.CancelSaleItem;
+using Ambev.DeveloperEvaluation.Application.Sales.CancelSale;
 
 namespace Ambev.DeveloperEvaluation.WebApi.Features.Sales;
 
@@ -33,7 +37,7 @@ public class SalesController : BaseController
     /// Creates a new sale
     /// </summary>
     [HttpPost]
-    [ProducesResponseType(typeof(ApiResponseWithData<CreateSaleResponse>), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(ApiResponseWithData<CreateSale.CreateSaleResponse>), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> CreateSale([FromBody] CreateSaleRequest request, CancellationToken cancellationToken)
     {
@@ -46,11 +50,11 @@ public class SalesController : BaseController
         var command = _mapper.Map<CreateSaleCommand>(request);
         var response = await _mediator.Send(command, cancellationToken);
 
-        return Created(string.Empty, new ApiResponseWithData<CreateSaleResponse>
+        return base.Created(string.Empty, new ApiResponseWithData<CreateSale.CreateSaleResponse>
         {
             Success = true,
             Message = "Sale created successfully",
-            Data = _mapper.Map<CreateSaleResponse>(response)
+            Data = _mapper.Map<CreateSale.CreateSaleResponse>(response)
         });
     }
 
@@ -109,6 +113,15 @@ public class SalesController : BaseController
         });
     }
 
+    [HttpPatch("{saleId:guid}/cancel")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> CancelSale(Guid saleId, CancellationToken cancellationToken)
+    {
+        await _mediator.Send(new CancelSaleCommand { SaleId = saleId }, cancellationToken);
+        return NoContent();
+    }
+
     [HttpPut("{id}")]
     [ProducesResponseType(typeof(ApiResponseWithData<UpdateSaleResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status400BadRequest)]
@@ -130,5 +143,32 @@ public class SalesController : BaseController
             Message = "Sale updated successfully",
             Data = _mapper.Map<UpdateSaleResponse>(result)
         });
+    }
+
+    [HttpPost("{saleId}/items")]
+    public async Task<IActionResult> AddItem(Guid saleId, [FromBody] AddSaleItemRequest request, CancellationToken cancellationToken)
+    {
+        var command = new AddSaleItemCommand
+        {
+            SaleId = saleId,
+            Product = request.Product,
+            Quantity = request.Quantity,
+            UnitPrice = request.UnitPrice
+        };
+
+        var itemId = await _mediator.Send(command, cancellationToken);
+        return Ok(new { success = true, message = "Item added", itemId });
+    }
+
+    [HttpPatch("{saleId}/items/{itemId}/cancel")]
+    public async Task<IActionResult> CancelItem(Guid saleId, Guid itemId, CancellationToken cancellationToken)
+    {
+        await _mediator.Send(new CancelSaleItemCommand
+        {
+            SaleId = saleId,
+            ItemId = itemId
+        }, cancellationToken);
+
+        return Ok(new ApiResponse { Success = true, Message = "Item successfully cancelled" });
     }
 }

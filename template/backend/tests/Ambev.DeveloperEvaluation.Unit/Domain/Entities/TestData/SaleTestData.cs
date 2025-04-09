@@ -5,30 +5,37 @@ namespace Ambev.DeveloperEvaluation.Unit.Domain.Entities.TestData;
 
 /// <summary>
 /// Provides reusable test data for the <see cref="Sale"/> entity.
-/// Ensures valid and invalid sale objects for unit tests.
+/// Ensures valid and consistent sale objects with sale items for unit tests.
 /// </summary>
 public static class SaleTestData
 {
+    private static readonly Faker<SaleItem> validSaleItemFaker = new Faker<SaleItem>()
+        .RuleFor(i => i.Product, f => f.Commerce.ProductName())
+        .RuleFor(i => i.Quantity, f => f.Random.Int(1, 20))
+        .RuleFor(i => i.UnitPrice, f => f.Random.Decimal(10m, 500m))
+        .RuleFor(i => i.IsCancelled, f => false)
+        .FinishWith((f, i) =>
+        {
+            i.Discount = SaleItem.CalculateDiscount(i.Quantity, i.UnitPrice);
+        });
+
     private static readonly Faker<Sale> validSaleFaker = new Faker<Sale>()
         .RuleFor(s => s.Id, f => Guid.NewGuid())
-        .RuleFor(s => s.SaleNumber, f => f.Random.AlphaNumeric(10))
+        .RuleFor(s => s.SaleNumber, f => $"SAL-{f.Random.Int(1000, 9999)}")
         .RuleFor(s => s.SaleDate, f => f.Date.Past(1))
         .RuleFor(s => s.Customer, f => f.Name.FullName())
         .RuleFor(s => s.Branch, f => f.Company.CompanyName())
-        .RuleFor(s => s.Product, f => f.Commerce.ProductName())
-        .RuleFor(s => s.Quantity, f => f.Random.Int(1, 20))
-        .RuleFor(s => s.UnitPrice, f => f.Random.Decimal(10, 500))
-        .RuleFor(s => s.IsCancelled, f => f.Random.Bool())
-        .RuleFor(s => s.Discount, (f, s) =>
+        .RuleFor(s => s.IsCancelled, f => false)
+        .RuleFor(s => s.CreatedAt, f => DateTime.UtcNow)
+        .RuleFor(s => s.UpdatedAt, f => null)
+        .RuleFor(s => s.Items, f =>
         {
-            if (s.Quantity < 4) return 0;
-            if (s.Quantity < 10) return s.UnitPrice * s.Quantity * 0.10m;
-            return s.UnitPrice * s.Quantity * 0.20m;
-        })
-        .RuleFor(s => s.Total, (f, s) => s.UnitPrice * s.Quantity - s.Discount);
+            var itemCount = f.Random.Int(1, 5);
+            return validSaleItemFaker.Generate(itemCount);
+        });
 
     /// <summary>
-    /// Generates a valid Sale entity for positive test cases.
+    /// Generates a valid Sale entity with items for positive test cases.
     /// </summary>
     public static Sale GenerateValidSale()
     {
@@ -36,22 +43,10 @@ public static class SaleTestData
     }
 
     /// <summary>
-    /// Generates a list of valid Sale entities.
+    /// Generates a list of valid Sale entities with items.
     /// </summary>
     public static List<Sale> GenerateMultipleValidSales(int count = 3)
     {
         return validSaleFaker.Generate(count);
-    }
-
-    /// <summary>
-    /// Generates a Sale with a specific quantity (to test discount tiers).
-    /// </summary>
-    public static Sale GenerateValidSaleWithQuantity(int quantity)
-    {
-        var sale = validSaleFaker.Generate();
-        sale.Quantity = quantity;
-        sale.Discount = quantity < 4 ? 0 : quantity < 10 ? sale.UnitPrice * quantity * 0.10m : sale.UnitPrice * quantity * 0.20m;
-        sale.Total = sale.UnitPrice * quantity - sale.Discount;
-        return sale;
     }
 }

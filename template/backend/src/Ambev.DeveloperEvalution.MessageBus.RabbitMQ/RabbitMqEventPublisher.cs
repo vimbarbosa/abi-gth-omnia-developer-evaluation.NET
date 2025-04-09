@@ -5,12 +5,20 @@ using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using RabbitMQ.Client;
 
+/// <summary>
+/// Publishes messages to a RabbitMQ queue using the configuration provided.
+/// </summary>
 public class RabbitMqEventPublisher : IEventPublisher
 {
     private readonly ILogger<RabbitMqEventPublisher> _logger;
     private readonly ConnectionFactory? _factory;
     private readonly bool _isConfigured;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="RabbitMqEventPublisher"/> class.
+    /// </summary>
+    /// <param name="configuration">Application configuration for RabbitMQ settings.</param>
+    /// <param name="logger">Logger instance.</param>
     public RabbitMqEventPublisher(IConfiguration configuration, ILogger<RabbitMqEventPublisher> logger)
     {
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
@@ -48,6 +56,14 @@ public class RabbitMqEventPublisher : IEventPublisher
         _isConfigured = true;
     }
 
+    /// <summary>
+    /// Publishes a message to a specific RabbitMQ queue.
+    /// </summary>
+    /// <typeparam name="T">The type of the message payload.</typeparam>
+    /// <param name="message">The message to be sent.</param>
+    /// <param name="queueName">The queue to which the message will be published.</param>
+    /// <param name="cancellationToken">Cancellation token (unused in this implementation).</param>
+    /// <returns>A task representing the asynchronous operation.</returns>
     public Task PublishAsync<T>(T message, string queueName, CancellationToken cancellationToken = default)
     {
         if (!_isConfigured)
@@ -95,6 +111,11 @@ public class RabbitMqEventPublisher : IEventPublisher
         return Task.CompletedTask;
     }
 
+    /// <summary>
+    /// Declares a durable RabbitMQ queue with the specified name.
+    /// </summary>
+    /// <param name="channel">RabbitMQ channel.</param>
+    /// <param name="queueName">Name of the queue to declare.</param>
     private void DeclareQueue(IModel channel, string queueName)
     {
         channel.QueueDeclare(
@@ -106,6 +127,13 @@ public class RabbitMqEventPublisher : IEventPublisher
         );
     }
 
+    /// <summary>
+    /// Logs a warning for missing or invalid configuration settings.
+    /// </summary>
+    /// <param name="message">The warning message.</param>
+    /// <param name="host">Optional RabbitMQ host value.</param>
+    /// <param name="port">Optional RabbitMQ port value.</param>
+    /// <param name="user">Optional RabbitMQ user value.</param>
     private void LogConfigWarning(string message, string? host = null, string? port = null, string? user = null)
     {
         _logger.LogWarning("{Message} Host: {Host}, Port: {Port}, User: {User}", message, host ?? "-", port ?? "-", user ?? "-");

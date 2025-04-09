@@ -1,63 +1,45 @@
-﻿namespace Ambev.DeveloperEvaluation.Application.Sales.UpdateSale
+﻿using Ambev.DeveloperEvaluation.Application.SaleItems.Dtos;
+
+namespace Ambev.DeveloperEvaluation.Application.Sales.UpdateSale
 {
     /// <summary>
-    /// Result returned after successfully updating a sale.
+    /// Represents the result of a successfully updated sale.
     /// </summary>
     public class UpdateSaleResult
     {
         /// <summary>
-        /// Unique identifier of the sale.
+        /// Gets or sets the unique identifier of the updated sale.
         /// </summary>
         public Guid Id { get; set; }
 
         /// <summary>
-        /// Unique sale number.
+        /// Gets or sets the sale number for reference.
         /// </summary>
         public string SaleNumber { get; set; } = string.Empty;
 
         /// <summary>
-        /// Date when the sale occurred.
+        /// Gets or sets the date when the sale occurred.
         /// </summary>
         public DateTime SaleDate { get; set; }
 
         /// <summary>
-        /// Customer associated with the sale.
+        /// Gets or sets the name of the customer involved in the sale.
         /// </summary>
         public string Customer { get; set; } = string.Empty;
 
         /// <summary>
-        /// Branch where the sale was made.
+        /// Gets or sets the name of the branch where the sale was made.
         /// </summary>
         public string Branch { get; set; } = string.Empty;
 
         /// <summary>
-        /// Name of the product sold.
-        /// </summary>
-        public string Product { get; set; } = string.Empty;
-
-        /// <summary>
-        /// Quantity of products sold.
-        /// </summary>
-        public int Quantity { get; set; }
-
-        /// <summary>
-        /// Price per unit of the product.
-        /// </summary>
-        public decimal UnitPrice { get; set; }
-
-        /// <summary>
-        /// Discount applied to the sale.
-        /// </summary>
-        public decimal Discount { get; set; }
-
-        /// <summary>
-        /// Total amount for the sale item.
-        /// </summary>
-        public decimal Total { get; set; }
-
-        /// <summary>
-        /// Indicates whether the sale was cancelled.
+        /// Gets or sets a flag indicating whether the sale was cancelled.
         /// </summary>
         public bool IsCancelled { get; set; }
+
+        /// <summary>
+        /// Gets or sets the list of items included in the sale.
+        /// </summary>
+        public List<SaleItemDto> Items { get; set; } = new();
     }
 }

@@ -1,4 +1,5 @@
-﻿using Ambev.DeveloperEvaluation.Application.Sales.UpdateSale;
+﻿using Ambev.DeveloperEvaluation.Application.SaleItems.Dtos;
+using Ambev.DeveloperEvaluation.Application.Sales.UpdateSale;
 using Ambev.DeveloperEvaluation.Domain.Entities;
 using Ambev.DeveloperEvaluation.Domain.Events;
 using Ambev.DeveloperEvaluation.Domain.Repositories;
@@ -11,13 +12,19 @@ using Xunit;
 
 namespace Ambev.DeveloperEvaluation.Unit.Application.Sales;
 
+/// <summary>
+/// Contains unit tests for the <see cref="UpdateSaleHandler"/> class.
+/// </summary>
 public class UpdateSaleHandlerTests
 {
     private readonly ISaleRepository _saleRepository;
     private readonly IMapper _mapper;
-    private readonly UpdateSaleHandler _handler;
     private readonly IEventPublisher _eventPublisher;
+    private readonly UpdateSaleHandler _handler;
 
+    /// <summary>
+    /// Initializes test dependencies.
+    /// </summary>
     public UpdateSaleHandlerTests()
     {
         _saleRepository = Substitute.For<ISaleRepository>();
@@ -26,174 +33,104 @@ public class UpdateSaleHandlerTests
         _handler = new UpdateSaleHandler(_saleRepository, _mapper, _eventPublisher);
     }
 
-    [Fact(DisplayName = "Given valid sale update data When updating Then returns success response")]
+    /// <summary>
+    /// Ensures the handler returns a valid result when updating a valid sale.
+    /// </summary>
+    [Fact(DisplayName = "Given valid sale data When updating sale Then returns success response")]
     public async Task Handle_ValidRequest_ReturnsSuccessResponse()
     {
-        var command = UpdateSaleHandlerTestData.GenerateValidCommand(quantity: 5); // 10% discount
-
-        var expectedDiscount = command.UnitPrice * command.Quantity * 0.10m;
-        var expectedTotal = (command.UnitPrice * command.Quantity) - expectedDiscount;
-
-        var existingSale = new Sale
+        // Arrange
+        var command = UpdateSaleHandlerTestData.GenerateValidCommand();
+        var sale = new Sale
         {
             Id = command.Id,
-            Product = command.Product,
-            Quantity = command.Quantity,
-            UnitPrice = command.UnitPrice,
-            Discount = expectedDiscount,
-            Total = expectedTotal,
-            SaleDate = command.SaleDate,
-            Branch = command.Branch,
-            Customer = command.Customer,
             SaleNumber = command.SaleNumber,
-            IsCancelled = command.Cancelled
+            SaleDate = command.SaleDate,
+            Customer = command.Customer,
+            Branch = command.Branch,
+            IsCancelled = command.IsCancelled,
+            Items = command.Items.Select(i => new SaleItem
+            {
+                Product = i.Product,
+                Quantity = i.Quantity,
+                UnitPrice = i.UnitPrice
+            }).ToList()
         };
 
         var result = new UpdateSaleResult
         {
-            Id = command.Id,
-            SaleNumber = command.SaleNumber,
-            SaleDate = command.SaleDate,
-            Customer = command.Customer,
-            Branch = command.Branch,
-            Product = command.Product,
-            Quantity = command.Quantity,
-            UnitPrice = command.UnitPrice,
-            Discount = expectedDiscount,
-            Total = expectedTotal,
-            IsCancelled = command.Cancelled
+            Id = sale.Id,
+            SaleNumber = sale.SaleNumber,
+            SaleDate = sale.SaleDate,
+            Customer = sale.Customer,
+            Branch = sale.Branch,
+            IsCancelled = sale.IsCancelled,
+            Items = sale.Items.Select(item => new SaleItemDto
+            {
+                Product = item.Product,
+                Quantity = item.Quantity,
+                UnitPrice = item.UnitPrice,
+                Discount = item.Discount,
+                Total = item.Total
+            }).ToList()
         };
 
-        _saleRepository.GetByIdAsync(command.Id, Arg.Any<CancellationToken>()).Returns(existingSale);
-        _mapper.Map(command, existingSale).Returns(existingSale);
-        _saleRepository.UpdateAsync(existingSale, Arg.Any<CancellationToken>()).Returns(existingSale);
-        _mapper.Map<UpdateSaleResult>(existingSale).Returns(result);
+        _mapper.Map<UpdateSaleResult>(sale).Returns(result);
+        _saleRepository.GetByIdAsync(command.Id, Arg.Any<CancellationToken>()).Returns(sale);
+        _saleRepository.UpdateAsync(sale, Arg.Any<CancellationToken>()).Returns(sale);
 
+        // Act
         var updateResult = await _handler.Handle(command, CancellationToken.None);
 
+        // Assert
         updateResult.Should().NotBeNull();
-        updateResult.Id.Should().Be(command.Id);
-        updateResult.Total.Should().Be(expectedTotal);
-        updateResult.Discount.Should().Be(expectedDiscount);
+        updateResult.Id.Should().Be(sale.Id);
+        await _saleRepository.Received(1).UpdateAsync(sale, Arg.Any<CancellationToken>());
+        await _eventPublisher.Received(1).PublishAsync(
+            Arg.Is<SaleModifiedEvent>(e =>
+                e.Payload.SaleNumber == sale.SaleNumber &&
+                e.Payload.Customer == sale.Customer &&
+                e.Payload.Branch == sale.Branch &&
+                e.Payload.Items.Count == sale.Items.Count &&
+                e.Payload.Items.All(i =>
+                    sale.Items.Any(x =>
+                        x.Product == i.Product &&
+                        x.Quantity == i.Quantity &&
+                        x.UnitPrice == i.UnitPrice))),
+            "sales.events", Arg.Any<CancellationToken>());
     }
 
-    [Fact(DisplayName = "Given quantity less than 4 When updating sale Then discount should be zero")]
-    public async Task Handle_QuantityLessThan4_DiscountShouldBeZero()
-    {
-        var command = UpdateSaleHandlerTestData.GenerateValidCommand(quantity: 3);
-        var expectedTotal = command.UnitPrice * command.Quantity;
-
-        var existingSale = new Sale
-        {
-            Id = command.Id,
-            Product = command.Product,
-            Quantity = command.Quantity,
-            UnitPrice = command.UnitPrice,
-            Discount = 0m,
-            Total = expectedTotal,
-            SaleDate = command.SaleDate,
-            Branch = command.Branch,
-            Customer = command.Customer,
-            SaleNumber = command.SaleNumber,
-            IsCancelled = command.Cancelled
-        };
-
-        _saleRepository.GetByIdAsync(command.Id, Arg.Any<CancellationToken>()).Returns(existingSale);
-        _mapper.Map(command, existingSale).Returns(existingSale);
-        _saleRepository.UpdateAsync(existingSale, Arg.Any<CancellationToken>()).Returns(existingSale);
-        _mapper.Map<UpdateSaleResult>(existingSale).Returns(new UpdateSaleResult
-        {
-            Id = existingSale.Id,
-            Product = existingSale.Product,
-            Quantity = existingSale.Quantity,
-            UnitPrice = existingSale.UnitPrice,
-            Discount = existingSale.Discount,
-            Total = existingSale.Total,
-            Branch = existingSale.Branch,
-            Customer = existingSale.Customer,
-            SaleNumber = existingSale.SaleNumber,
-            SaleDate = existingSale.SaleDate,
-            IsCancelled = existingSale.IsCancelled
-        });
-
-        var result = await _handler.Handle(command, CancellationToken.None);
-
-        result.Should().NotBeNull();
-        result.Discount.Should().Be(0m);
-        result.Total.Should().Be(expectedTotal);
-    }
-
-    [Fact(DisplayName = "Given quantity between 10 and 20 When updating Then applies 20% discount")]
-    public async Task Handle_QuantityBetween10And20_AppliesTwentyPercentDiscount()
-    {
-        var command = UpdateSaleHandlerTestData.GenerateValidCommand(quantity: 10);
-        var expectedDiscount = command.UnitPrice * command.Quantity * 0.20m;
-        var expectedTotal = (command.UnitPrice * command.Quantity) - expectedDiscount;
-
-        var existingSale = new Sale
-        {
-            Id = command.Id,
-            Product = command.Product,
-            Quantity = command.Quantity,
-            UnitPrice = command.UnitPrice,
-            Discount = expectedDiscount,
-            Total = expectedTotal,
-            Branch = command.Branch,
-            Customer = command.Customer,
-            SaleDate = command.SaleDate,
-            SaleNumber = command.SaleNumber,
-            IsCancelled = command.Cancelled
-        };
-
-        _saleRepository.GetByIdAsync(command.Id, Arg.Any<CancellationToken>()).Returns(existingSale);
-        _mapper.Map(command, existingSale).Returns(existingSale);
-        _saleRepository.UpdateAsync(existingSale, Arg.Any<CancellationToken>()).Returns(existingSale);
-        _mapper.Map<UpdateSaleResult>(existingSale).Returns(new UpdateSaleResult
-        {
-            Id = existingSale.Id,
-            Product = existingSale.Product,
-            Quantity = existingSale.Quantity,
-            UnitPrice = existingSale.UnitPrice,
-            Discount = existingSale.Discount,
-            Total = existingSale.Total,
-            Branch = existingSale.Branch,
-            Customer = existingSale.Customer,
-            SaleNumber = existingSale.SaleNumber,
-            SaleDate = existingSale.SaleDate,
-            IsCancelled = existingSale.IsCancelled
-        });
-
-        var result = await _handler.Handle(command, CancellationToken.None);
-
-        result.Should().NotBeNull();
-        result.Discount.Should().Be(expectedDiscount);
-        result.Total.Should().Be(expectedTotal);
-    }
-
-    [Fact(DisplayName = "Given quantity greater than 20 When updating Then throws validation exception")]
-    public async Task Handle_QuantityGreaterThan20_ThrowsValidationException()
-    {
-        var command = UpdateSaleHandlerTestData.GenerateValidCommand(quantity: 25);
-        var act = () => _handler.Handle(command, CancellationToken.None);
-        await act.Should().ThrowAsync<ValidationException>()
-            .WithMessage("*Cannot sell more than 20 identical items*");
-    }
-
+    /// <summary>
+    /// Ensures the handler throws a KeyNotFoundException when sale ID is invalid.
+    /// </summary>
     [Fact(DisplayName = "Given non-existent sale ID When updating Then throws KeyNotFoundException")]
-    public async Task Handle_NonExistentId_ThrowsException()
+    public async Task Handle_NonExistentSale_ThrowsKeyNotFoundException()
     {
+        // Arrange
         var command = UpdateSaleHandlerTestData.GenerateValidCommand();
         _saleRepository.GetByIdAsync(command.Id, Arg.Any<CancellationToken>()).Returns((Sale?)null);
+
+        // Act
         var act = () => _handler.Handle(command, CancellationToken.None);
+
+        // Assert
         await act.Should().ThrowAsync<KeyNotFoundException>()
             .WithMessage($"Sale with ID {command.Id} not found");
     }
 
-    [Fact(DisplayName = "Given invalid data When updating Then throws validation exception")]
+    /// <summary>
+    /// Ensures the handler throws a validation exception when data is invalid.
+    /// </summary>
+    [Fact(DisplayName = "Given invalid update data When updating Then throws validation exception")]
     public async Task Handle_InvalidRequest_ThrowsValidationException()
     {
-        var command = new UpdateSaleCommand(); // inválido
+        // Arrange
+        var command = new UpdateSaleCommand(); // Incomplete data
+
+        // Act
         var act = () => _handler.Handle(command, CancellationToken.None);
+
+        // Assert
         await act.Should().ThrowAsync<ValidationException>();
     }
 }

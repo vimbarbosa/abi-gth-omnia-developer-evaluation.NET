@@ -1,65 +1,46 @@
-﻿using MediatR;
+﻿using Ambev.DeveloperEvaluation.Application.SaleItems.AddSaleItem;
+using MediatR;
 
 namespace Ambev.DeveloperEvaluation.Application.Sales.UpdateSale
 {
     /// <summary>
-    /// Command to update an existing sale.
+    /// Represents a command to update an existing sale with new data and items.
     /// </summary>
     public class UpdateSaleCommand : IRequest<UpdateSaleResult>
     {
         /// <summary>
-        /// The unique identifier of the sale.
+        /// Gets or sets the unique identifier of the sale.
         /// </summary>
         public Guid Id { get; set; }
 
         /// <summary>
-        /// The unique number identifying the sale.
+        /// Gets or sets the sale number that identifies the transaction.
         /// </summary>
         public string SaleNumber { get; set; } = string.Empty;
 
         /// <summary>
-        /// The date when the sale was made.
+        /// Gets or sets the date when the sale occurred.
         /// </summary>
         public DateTime SaleDate { get; set; }
 
         /// <summary>
-        /// The name of the customer.
+        /// Gets or sets the name of the customer making the purchase.
         /// </summary>
         public string Customer { get; set; } = string.Empty;
 
         /// <summary>
-        /// The branch where the sale occurred.
+        /// Gets or sets the name of the branch where the sale was made.
         /// </summary>
         public string Branch { get; set; } = string.Empty;
 
         /// <summary>
-        /// The product sold.
+        /// Gets or sets a value indicating whether the sale has been cancelled.
         /// </summary>
-        public string Product { get; set; } = string.Empty;
+        public bool IsCancelled { get; set; }
 
         /// <summary>
-        /// Quantity of product sold.
+        /// Gets or sets the list of items included in the sale.
         /// </summary>
-        public int Quantity { get; set; }
-
-        /// <summary>
-        /// Price per unit of product.
-        /// </summary>
-        public decimal UnitPrice { get; set; }
-
-        /// <summary>
-        /// Discount applied to the sale.
-        /// </summary>
-        public decimal Discount { get; set; }
-
-        /// <summary>
-        /// Total value of the sale item (after applying discount).
-        /// </summary>
-        public decimal Total { get; set; }
-
-        /// <summary>
-        /// Whether the sale was cancelled.
-        /// </summary>
-        public bool Cancelled { get; set; }
+        public List<AddSaleItemCommand> Items { get; set; } = new();
     }
 }

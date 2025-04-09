@@ -1,61 +1,52 @@
-﻿using Ambev.DeveloperEvaluation.Application.Sales.UpdateSale;
+﻿using Ambev.DeveloperEvaluation.Application.SaleItems.AddSaleItem;
+using Ambev.DeveloperEvaluation.Application.Sales.UpdateSale;
 using Bogus;
 
 namespace Ambev.DeveloperEvaluation.Unit.Application.Sales.TestData
 {
+    /// <summary>
+    /// Provides reusable test data for <see cref="UpdateSaleCommand"/> using Bogus.
+    /// Ensures generation of valid data for testing update sale scenarios.
+    /// </summary>
     public static class UpdateSaleHandlerTestData
     {
+        /// <summary>
+        /// Faker instance configured to generate realistic and valid update sale commands.
+        /// </summary>
         private static readonly Faker<UpdateSaleCommand> updateSaleHandlerFaker = new Faker<UpdateSaleCommand>()
             .RuleFor(s => s.Id, f => f.Random.Guid())
-            .RuleFor(s => s.SaleNumber, f => f.Random.Int(1000, 9999).ToString())
+            .RuleFor(s => s.SaleNumber, f => f.Random.AlphaNumeric(10).ToUpper())
             .RuleFor(s => s.SaleDate, f => f.Date.Past(1))
             .RuleFor(s => s.Customer, f => f.Name.FullName())
             .RuleFor(s => s.Branch, f => f.Company.CompanyName())
-            .RuleFor(s => s.Product, f => f.Commerce.ProductName())
-            .RuleFor(s => s.Quantity, f => f.Random.Int(1, 20))
-            .RuleFor(s => s.UnitPrice, f => f.Finance.Amount(10, 1000))
-            .RuleFor(s => s.Discount, f => 0) // será recalculado se necessário
-            .RuleFor(s => s.Total, (f, s) => s.Quantity * s.UnitPrice)
-            .RuleFor(s => s.Cancelled, f => f.Random.Bool());
+            .RuleFor(s => s.IsCancelled, f => f.Random.Bool())
+            .RuleFor(s => s.Items, f =>
+            {
+                var itemFaker = new Faker<AddSaleItemCommand>()
+                    .RuleFor(i => i.Product, f => f.Commerce.ProductName())
+                    .RuleFor(i => i.Quantity, f => f.Random.Int(1, 20))
+                    .RuleFor(i => i.UnitPrice, f => f.Finance.Amount(10, 1000));
 
+                return itemFaker.Generate(f.Random.Int(1, 3));
+            });
+
+        /// <summary>
+        /// Generates a single valid <see cref="UpdateSaleCommand"/> instance.
+        /// </summary>
+        /// <returns>A valid <see cref="UpdateSaleCommand"/> for unit testing.</returns>
         public static UpdateSaleCommand GenerateValidCommand()
         {
-            var command = updateSaleHandlerFaker.Generate();
-            return ApplyDiscountRules(command);
+            return updateSaleHandlerFaker.Generate();
         }
 
-        public static UpdateSaleCommand GenerateValidCommand(int quantity)
-        {
-            var command = updateSaleHandlerFaker.Generate();
-            command.Quantity = quantity;
-            return ApplyDiscountRules(command);
-        }
-
+        /// <summary>
+        /// Generates a list of valid <see cref="UpdateSaleCommand"/> instances.
+        /// </summary>
+        /// <param name="count">The number of commands to generate.</param>
+        /// <returns>A list of valid <see cref="UpdateSaleCommand"/> for unit testing.</returns>
         public static List<UpdateSaleCommand> GenerateMultipleValidCommands(int count = 5)
         {
-            return Enumerable.Range(1, count)
-                .Select(_ => GenerateValidCommand())
-                .ToList();
-        }
-
-        private static UpdateSaleCommand ApplyDiscountRules(UpdateSaleCommand command)
-        {
-            if (command.Quantity >= 4 && command.Quantity < 10)
-            {
-                command.Discount = command.Quantity * command.UnitPrice * 0.10m;
-            }
-            else if (command.Quantity >= 10 && command.Quantity <= 20)
-            {
-                command.Discount = command.Quantity * command.UnitPrice * 0.20m;
-            }
-            else
-            {
-                command.Discount = 0;
-            }
-
-            command.Total = (command.Quantity * command.UnitPrice) - command.Discount;
-
-            return command;
+            return updateSaleHandlerFaker.Generate(count);
         }
     }
 }

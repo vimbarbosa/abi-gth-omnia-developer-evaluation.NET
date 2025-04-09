@@ -22,7 +22,9 @@ namespace Ambev.DeveloperEvaluation.ORM.Repositories
 
         public async Task<Sale?> GetByIdAsync(Guid id, CancellationToken cancellationToken)
         {
-            return await _context.Sales.FindAsync(new object[] { id }, cancellationToken);
+            return await _context.Sales
+                .Include(x => x.Items)
+                .FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
         }
 
         public async Task<IEnumerable<Sale>> GetAllAsync(CancellationToken cancellationToken)
