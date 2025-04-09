@@ -1,86 +1,75 @@
-# Developer Evaluation Project
+# 💻 Ambev Developer Evaluation (.NET)
 
-`READ CAREFULLY`
+Este é o backend da aplicação de avaliação técnica, implementado em .NET 8 com arquitetura em camadas, suporte a mensageria via RabbitMQ, persistência com PostgreSQL e migrations gerenciadas separadamente via projeto `ORM`.
 
-## Instructions
-**The test below will have up to 7 calendar days to be delivered from the date of receipt of this manual.**
+---
 
-- The code must be versioned in a public Github repository and a link must be sent for evaluation once completed
-- Upload this template to your repository and start working from it
-- Read the instructions carefully and make sure all requirements are being addressed
-- The repository must provide instructions on how to configure, execute and test the project
-- Documentation and overall organization will also be taken into consideration
+## 📦 Tecnologias Utilizadas
 
-## Use Case
-**You are a developer on the DeveloperStore team. Now we need to implement the API prototypes.**
+- ASP.NET Core 8 (Web API)
+- Entity Framework Core (com projeto separado para Migrations)
+- PostgreSQL
+- RabbitMQ
+- Redis (opcional, usado como cache)
+- Docker / Docker Compose
 
-As we work with `DDD`, to reference entities from other domains, we use the `External Identities` pattern with denormalization of entity descriptions.
+---
 
-Therefore, you will write an API (complete CRUD) that handles sales records. The API needs to be able to inform:
+## 🚀 Como rodar o projeto localmente
 
-* Sale number
-* Date when the sale was made
-* Customer
-* Total sale amount
-* Branch where the sale was made
-* Products
-* Quantities
-* Unit prices
-* Discounts
-* Total amount for each item
-* Cancelled/Not Cancelled
+### 1. 📁 Clone o repositório
 
-It's not mandatory, but it would be a differential to build code for publishing events of:
-* SaleCreated
-* SaleModified
-* SaleCancelled
-* ItemCancelled
+bash
+git clone https://github.com/vimbarbosa/abi-gth-omnia-developer-evaluation.NET.git
+cd abi-gth-omnia-developer-evaluation.NET
 
-If you write the code, **it's not required** to actually publish to any Message Broker. You can log a message in the application log or however you find most convenient.
+### 2. ⚙️ Pré-requisitos
+Certifique-se de ter instalado:
 
-### Business Rules
+- .NET SDK 8+
+- Docke
+- EF CLI:
+    dotnet tool install --global dotnet-ef
 
-* Purchases above 4 identical items have a 10% discount
-* Purchases between 10 and 20 identical items have a 20% discount
-* It's not possible to sell above 20 identical items
-* Purchases below 4 items cannot have a discount
+### 3. 🐳 Inicie com o script start.sh
 
-These business rules define quantity-based discounting tiers and limitations:
+chmod +x start.sh
+./start.sh
 
-1. Discount Tiers:
-   - 4+ items: 10% discount
-   - 10-20 items: 20% discount
+### 4. 🌐 Acesse a API
+http://localhost:5119/swagger
 
-2. Restrictions:
-   - Maximum limit: 20 items per product
-   - No discounts allowed for quantities below 4 items
+### 🧪 Testes
+ - Para rodar os testes unitários:
+dotnet test
 
-## Overview
-This section provides a high-level overview of the project and the various skills and competencies it aims to assess for developer candidates. 
+### 🗃️ Migrations
+⚠️ As migrations são gerenciadas via o projeto Ambev.DeveloperEvaluation.ORM
+ - Criar uma nova migration
+dotnet ef migrations add NomeDaMigration \
+  --project src/Ambev.DeveloperEvaluation.ORM \
+  --output-dir Migrations
 
-See [Overview](/.doc/overview.md)
+- Aplicar migrations manualmente (caso necessário)
+dotnet ef database update --project src/Ambev.DeveloperEvaluation.ORM
 
-## Tech Stack
-This section lists the key technologies used in the project, including the backend, testing, frontend, and database components. 
+### 📁 Estrutura de Pastas
+/src
+│
+├── Ambev.DeveloperEvaluation.WebApi      # Projeto da API (Endpoints, Controllers, Middlewares)
+├── Ambev.DeveloperEvaluation.ORM         # Projeto do EF Core (DbContext + Migrations)
+├── Ambev.DeveloperEvaluation.Domain      # Entidades, Eventos, Interfaces
+├── Ambev.DeveloperEvaluation.Application # Commands, Handlers, Validations
+└── Ambev.DeveloperEvaluation.Unit        # Testes Unitários (xUnit)
 
-See [Tech Stack](/.doc/tech-stack.md)
+✅ Ambiente
+Variáveis de ambiente estão definidas nos arquivos appsettings.json e/ou docker-compose.yml. Por padrão:
+PostgreSQL: localhost:5432
+RabbitMQ: localhost:5672, com UI em localhost:15672 (user: developer, password: ev@luAt10n)
+Redis: localhost:6379
 
-## Frameworks
-This section outlines the frameworks and libraries that are leveraged in the project to enhance development productivity and maintainability. 
-
-See [Frameworks](/.doc/frameworks.md)
-
-<!-- 
-## API Structure
-This section includes links to the detailed documentation for the different API resources:
-- [API General](./docs/general-api.md)
-- [Products API](/.doc/products-api.md)
-- [Carts API](/.doc/carts-api.md)
-- [Users API](/.doc/users-api.md)
-- [Auth API](/.doc/auth-api.md)
--->
-
-## Project Structure
-This section describes the overall structure and organization of the project files and directories. 
-
-See [Project Structure](/.doc/project-structure.md)
+### 🧼 Reset do Banco de Dados
+- Se quiser resetar o banco e gerar uma nova migration:
+dotnet ef migrations remove --project src/Ambev.DeveloperEvaluation.ORM
+dotnet ef migrations add Initial --project src/Ambev.DeveloperEvaluation.ORM
+dotnet ef database update --project src/Ambev.DeveloperEvaluation.ORM
