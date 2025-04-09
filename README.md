@@ -29,47 +29,20 @@ Certifique-se de ter instalado:
 - .NET SDK 8+
 - Docke
 - EF CLI:
+  - bash
     dotnet tool install --global dotnet-ef
 
 ### 3. 🐳 Inicie com o script start.sh
 
-chmod +x start.sh
+- bash na raiz do projeto
 ./start.sh
 
 ### 4. 🌐 Acesse a API
 http://localhost:5119/swagger
 
-### 🧪 Testes
- - Para rodar os testes unitários:
-dotnet test
 
-### 🗃️ Migrations
-⚠️ As migrations são gerenciadas via o projeto Ambev.DeveloperEvaluation.ORM
- - Criar uma nova migration
-dotnet ef migrations add NomeDaMigration \
-  --project src/Ambev.DeveloperEvaluation.ORM \
-  --output-dir Migrations
-
-- Aplicar migrations manualmente (caso necessário)
-dotnet ef database update --project src/Ambev.DeveloperEvaluation.ORM
-
-### 📁 Estrutura de Pastas
-/src
-│
-├── Ambev.DeveloperEvaluation.WebApi      # Projeto da API (Endpoints, Controllers, Middlewares)
-├── Ambev.DeveloperEvaluation.ORM         # Projeto do EF Core (DbContext + Migrations)
-├── Ambev.DeveloperEvaluation.Domain      # Entidades, Eventos, Interfaces
-├── Ambev.DeveloperEvaluation.Application # Commands, Handlers, Validations
-└── Ambev.DeveloperEvaluation.Unit        # Testes Unitários (xUnit)
-
-✅ Ambiente
-Variáveis de ambiente estão definidas nos arquivos appsettings.json e/ou docker-compose.yml. Por padrão:
-PostgreSQL: localhost:5432
-RabbitMQ: localhost:5672, com UI em localhost:15672 (user: developer, password: ev@luAt10n)
-Redis: localhost:6379
-
-### 🧼 Reset do Banco de Dados
-- Se quiser resetar o banco e gerar uma nova migration:
-dotnet ef migrations remove --project src/Ambev.DeveloperEvaluation.ORM
-dotnet ef migrations add Initial --project src/Ambev.DeveloperEvaluation.ORM
-dotnet ef database update --project src/Ambev.DeveloperEvaluation.ORM
+### 5 🐰 Acessando o RabbitMQ
+A aplicação sobe um container com RabbitMQ que inclui o painel de gerenciamento web. Para acessá-lo:
+URL: http://localhost:15672
+Usuário: developer
+Senha: ev@luAt10n
