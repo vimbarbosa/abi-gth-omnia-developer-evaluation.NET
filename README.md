@@ -34,7 +34,7 @@ Certifique-se de ter instalado:
 
 ### 3. 🐳 Inicie com o script start.sh
 
-- bash na raiz do projeto
+- abra o bash na raiz do projeto e execute o comando
 ./start.sh
 
 ### 4. 🌐 Acesse a API

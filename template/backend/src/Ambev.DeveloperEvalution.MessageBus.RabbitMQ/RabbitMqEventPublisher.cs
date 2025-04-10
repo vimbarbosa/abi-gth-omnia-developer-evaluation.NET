@@ -91,7 +91,11 @@ public class RabbitMqEventPublisher : IEventPublisher
 
             DeclareQueue(channel, queueName);
 
-            var json = JsonConvert.SerializeObject(message);
+            var settings = new JsonSerializerSettings
+            {
+                ReferenceLoopHandling = ReferenceLoopHandling.Ignore
+            };
+            var json = JsonConvert.SerializeObject(message, settings);
             var body = Encoding.UTF8.GetBytes(json);
 
             channel.BasicPublish(
